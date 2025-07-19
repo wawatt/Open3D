@@ -212,6 +212,12 @@ public:
     void CaptureDepthPointCloud(const std::string &filename = "",
                                 bool do_render = true,
                                 bool convert_to_world_coordinate = false);
+
+    bool CapturePoint3D(int row, int col,
+                        Eigen::Vector3d& point_3d,
+                        bool do_render = true,
+                        bool convert_to_world_coordinate = false);
+
     void CaptureRenderOption(const std::string &filename = "");
 
     /// Function to reset view point.
