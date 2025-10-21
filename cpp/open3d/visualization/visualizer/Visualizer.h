@@ -190,6 +190,8 @@ public:
     /// \param do_render Set to `true` to do render.
     void CaptureScreenImage(const std::string &filename = "",
                             bool do_render = true);
+    std::shared_ptr<geometry::Image> CaptureScreenImage(bool do_render = true);
+
     /// Function to capture depth in a float buffer.
     ///
     /// \param do_render Set to `true` to do render.

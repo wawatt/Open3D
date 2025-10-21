@@ -276,6 +276,45 @@ void Visualizer::CaptureScreenImage(const std::string &filename /* = ""*/,
     }
 }
 
+std::shared_ptr<geometry::Image> Visualizer::CaptureScreenImage(bool do_render /* = true*/) {
+
+    geometry::Image screen_image;
+    screen_image.Prepare(view_control_ptr_->GetWindowWidth(),
+                         view_control_ptr_->GetWindowHeight(), 3, 1);
+    if (do_render) {
+        Render(true);
+        is_redraw_required_ = false;
+    }
+    glFinish();
+    glReadPixels(0, 0, view_control_ptr_->GetWindowWidth(),
+                 view_control_ptr_->GetWindowHeight(), GL_RGB, GL_UNSIGNED_BYTE,
+                 screen_image.data_.data());
+
+    if (render_fbo_ != 0) {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDeleteFramebuffers(1, &render_fbo_);
+        glDeleteRenderbuffers(1, &render_depth_stencil_rbo_);
+        glDeleteTextures(1, &render_rgb_tex_);
+        render_fbo_ = 0;
+    }
+
+    // glReadPixels get the screen in a vertically flipped manner
+    // Thus we should flip it back.
+    std::shared_ptr<geometry::Image> png_image = std::make_shared<geometry::Image>();
+    png_image->Prepare(view_control_ptr_->GetWindowWidth(),
+                      view_control_ptr_->GetWindowHeight(), 3, 1);
+    int bytes_per_line = screen_image.BytesPerLine();
+    for (int i = 0; i < screen_image.height_; i++) {
+        memcpy(png_image->data_.data() + bytes_per_line * i,
+               screen_image.data_.data() +
+                       bytes_per_line * (screen_image.height_ - i - 1),
+               bytes_per_line);
+    }
+
+    return png_image;
+}
+
+
 std::shared_ptr<geometry::Image> Visualizer::CaptureDepthFloatBuffer(
         bool do_render /* = true*/) {
     geometry::Image depth_image;
