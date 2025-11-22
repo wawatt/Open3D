@@ -811,10 +811,13 @@ public:
     /// \param mesh This is the second operand for the boolean operation.
     /// \param tolerance Threshold which determines when point distances are
     /// considered to be 0.
-    ///
+    /// 
     /// \return The mesh describing the intersection volume.
     TriangleMesh BooleanIntersection(const TriangleMesh &mesh,
                                      double tolerance = 1e-6) const;
+
+    bool IsIntersection(const TriangleMesh &mesh,
+                             double tolerance = 1e-6) const;
 
     /// Computes the mesh that encompasses the volume after subtracting the
     /// volume of the second operand. Both meshes should be manifold.

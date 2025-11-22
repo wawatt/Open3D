@@ -10,6 +10,7 @@
 #include <fmt/core.h>
 #include <tbb/parallel_for_each.h>
 #include <vtkBooleanOperationPolyDataFilter.h>
+#include <vtkOBBTree.h>
 #include <vtkCleanPolyData.h>
 #include <vtkClipPolyData.h>
 #include <vtkCutter.h>
@@ -743,6 +744,44 @@ TriangleMesh TriangleMesh::BooleanIntersection(const TriangleMesh &mesh,
     return BooleanOperation(
             *this, mesh, tolerance,
             vtkBooleanOperationPolyDataFilter::VTK_INTERSECTION);
+}
+
+// Function to be called on intersecting leaf nodes of the two OBB trees.
+// Final void pointer is a pointer to an int, namely the count of the number
+// of intersections found so far, which is incremented.
+int IntersectingLeafCounter(vtkOBBNode* polyNode, vtkOBBNode* cubeNode,
+		vtkMatrix4x4* transform, void *ptr_to_intersection_count) {
+	int &intersection_count = *static_cast<int*>(ptr_to_intersection_count);
+	intersection_count++;
+    return 0;
+}
+
+bool TriangleMesh::IsIntersection(const TriangleMesh &mesh,double tolerance) const {
+    using namespace vtkutils;
+    // exclude triangle attributes because they will not be preserved
+    auto polydata_A = CreateVtkPolyDataFromGeometry(
+            *this, this->GetVertexAttr().GetKeySet(), {}, {}, {}, false);
+    auto polydata_B = CreateVtkPolyDataFromGeometry(
+            mesh, mesh.GetVertexAttr().GetKeySet(), {}, {}, {}, false);
+
+    // clean meshes before passing them to the boolean operation
+    vtkNew<vtkOBBTree> obbTree_A;
+    obbTree_A->SetDataSet(polydata_A);
+    obbTree_A->SetTolerance(tolerance);
+    obbTree_A->BuildLocator();
+
+    vtkNew<vtkOBBTree> obbTree_B;
+    obbTree_B->SetDataSet(polydata_B);
+    obbTree_B->BuildLocator();
+
+    // 检测碰撞
+    int intersection_count = 0;
+	obbTree_A->IntersectWithOBBTree(obbTree_B, NULL,
+			IntersectingLeafCounter, static_cast<void*>(&intersection_count));
+    if (intersection_count == 0) {
+        return false;// 没有碰撞
+    }
+    return true;// 有碰撞
 }
 
 TriangleMesh TriangleMesh::BooleanDifference(const TriangleMesh &mesh,

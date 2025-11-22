@@ -276,7 +276,7 @@ void Visualizer::CaptureScreenImage(const std::string &filename /* = ""*/,
     }
 }
 
-std::shared_ptr<geometry::Image> Visualizer::CaptureScreenImage(bool do_render /* = true*/) {
+std::shared_ptr<geometry::Image> Visualizer::CaptureScreen2Image(bool do_render /* = true*/) {
 
     geometry::Image screen_image;
     screen_image.Prepare(view_control_ptr_->GetWindowWidth(),
