@@ -23,6 +23,7 @@
 #include <unordered_set>
 
 #include "open3d/geometry/Geometry.h"
+#include "open3d/geometry/PointCloud.h"
 #include "open3d/visualization/shader/GeometryRenderer.h"
 #include "open3d/visualization/utility/ColorMap.h"
 #include "open3d/visualization/visualizer/RenderOption.h"
@@ -212,6 +213,10 @@ public:
     /// \param convert_to_world_coordinate Set to `true` to convert to world
     /// coordinates.
     void CaptureDepthPointCloud(const std::string &filename = "",
+                                bool do_render = true,
+                                bool convert_to_world_coordinate = false);
+
+    std::shared_ptr<geometry::PointCloud> CapturePointCloud(
                                 bool do_render = true,
                                 bool convert_to_world_coordinate = false);
 
