@@ -225,6 +225,10 @@ public:
                         bool do_render = true,
                         bool convert_to_world_coordinate = false);
 
+    std::shared_ptr<geometry::PointCloud> CapturePointCloud(const std::vector<int>& rows, const std::vector<int>& cols,
+        bool do_render = true,
+        bool convert_to_world_coordinate = false);
+
     void CaptureRenderOption(const std::string &filename = "");
 
     /// Function to reset view point.
