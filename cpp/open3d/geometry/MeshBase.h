@@ -93,6 +93,8 @@ public:
                                 bool relative = true) override;
     virtual MeshBase &Scale(const double scale,
                             const Eigen::Vector3d &center) override;
+    MeshBase &Scale(const Eigen::Vector3d& scale,
+                    const Eigen::Vector3d &center);
     virtual MeshBase &Rotate(const Eigen::Matrix3d &R,
                              const Eigen::Vector3d &center) override;
 

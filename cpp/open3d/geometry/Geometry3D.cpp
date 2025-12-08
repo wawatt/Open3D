@@ -120,6 +120,14 @@ void Geometry3D::ScalePoints(const double scale,
     }
 }
 
+void Geometry3D::ScalePoints(const Eigen::Vector3d& scale,
+                             std::vector<Eigen::Vector3d>& points,
+                             const Eigen::Vector3d& center) const {
+    for (auto& point : points) {
+        point = (point - center).cwiseProduct(scale) + center;
+    }
+}
+
 void Geometry3D::RotatePoints(const Eigen::Matrix3d& R,
                               std::vector<Eigen::Vector3d>& points,
                               const Eigen::Vector3d& center) const {

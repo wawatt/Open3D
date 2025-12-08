@@ -71,6 +71,11 @@ MeshBase &MeshBase::Scale(const double scale, const Eigen::Vector3d &center) {
     return *this;
 }
 
+MeshBase &MeshBase::Scale(const Eigen::Vector3d& scale, const Eigen::Vector3d &center) {
+    ScalePoints(scale, vertices_, center);
+    return *this;
+}
+
 MeshBase &MeshBase::Rotate(const Eigen::Matrix3d &R,
                            const Eigen::Vector3d &center) {
     RotatePoints(R, vertices_, center);

@@ -184,6 +184,16 @@ protected:
                      std::vector<Eigen::Vector3d>& points,
                      const Eigen::Vector3d& center) const;
 
+    /// \brief Scale the coordinates of all points by the scaling factor \p
+    /// scale.
+    ///
+    /// \param scale The xyz scale factor that is used to resize the geometry
+    /// \param points A list of points to be transformed
+    /// \param center Scale center that is used to resize the geometry..
+    void ScalePoints(const Eigen::Vector3d& scale,
+                     std::vector<Eigen::Vector3d>& points,
+                     const Eigen::Vector3d& center) const;
+
     /// \brief Rotate all points with the rotation matrix \p R.
     ///
     /// \param R A 3x3 rotation matrix
