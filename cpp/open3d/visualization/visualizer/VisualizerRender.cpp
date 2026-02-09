@@ -15,6 +15,7 @@
 #include "open3d/visualization/visualizer/ViewParameters.h"
 #include "open3d/visualization/visualizer/ViewTrajectory.h"
 #include "open3d/visualization/visualizer/Visualizer.h"
+#include "open3d/utility/Parallel.h"
 
 #if defined(BUILD_GUI)
 namespace bluegl {
@@ -484,6 +485,89 @@ void Visualizer::CaptureDepthPointCloud(
         view_control_ptr_->ConvertToPinholeCameraParameters(parameter);
         io::WriteIJsonConvertible(camera_filename, parameter);
     }
+}
+
+std::shared_ptr<geometry::Image> Visualizer::CapturePointCloudFloatBuffer(
+    bool do_render /* = true*/,
+    bool convert_to_world_coordinate /* = false*/,
+    float invalid_value /* = std::numeric_limits<float>::quiet_NaN()*/) {
+
+    geometry::Image depth_image;
+    depth_image.Prepare(view_control_ptr_->GetWindowWidth(),
+                        view_control_ptr_->GetWindowHeight(), 1, 4);
+
+    if (do_render) {
+        Render();
+        is_redraw_required_ = false;
+    }
+    glFinish();
+
+#if __APPLE__
+    // On OSX with Retina display and glfw3, there is a bug with glReadPixels().
+    // When using glReadPixels() to read a block of depth data. The data is
+    // horizontally stretched (vertically it is fine). This issue is related
+    // to GLFW_SAMPLES hint. When it is set to 0 (anti-aliasing disabled),
+    // glReadPixels() works fine. See this post for details:
+    // http://stackoverflow.com/questions/30608121/glreadpixel-one-pass-vs-looping-through-points
+    // The reason of this bug is unknown. The current workaround is to read
+    // depth buffer column by column. This is 15~30 times slower than one block
+    // reading glReadPixels().
+    std::vector<float> float_buffer(depth_image.height_);
+    float *p = (float *)depth_image.data_.data();
+    for (int j = 0; j < depth_image.width_; j++) {
+        glReadPixels(j, 0, 1, depth_image.width_, GL_DEPTH_COMPONENT, GL_FLOAT,
+                     float_buffer.data());
+        for (int i = 0; i < depth_image.height_; i++) {
+            p[i * depth_image.width_ + j] = float_buffer[i];
+        }
+    }
+#else   //__APPLE__
+    // By default, glReadPixels read a block of depth buffer.
+    glReadPixels(0, 0, depth_image.width_, depth_image.height_,
+                 GL_DEPTH_COMPONENT, GL_FLOAT, depth_image.data_.data());
+#endif  //__APPLE__
+
+    gl_util::GLMatrix4f mvp_matrix;
+    if (convert_to_world_coordinate) {
+        mvp_matrix = view_control_ptr_->GetMVPMatrix();
+    } else {
+        mvp_matrix = view_control_ptr_->GetProjectionMatrix();
+    }
+
+    // glReadPixels get the screen in a vertically flipped manner
+    // We should flip it back, and convert it to the correct depth value
+    auto output = std::make_shared<geometry::Image>();
+    output->Prepare(depth_image.width_, depth_image.height_, 3, sizeof(float));
+#ifdef _WIN32
+#pragma omp parallel for schedule(static) \
+        num_threads(utility::EstimateMaxThreads()) // #include "open3d/utility/Parallel.h"
+#else
+#pragma omp parallel for collapse(2) schedule(static)
+#endif
+    for (int i = 0; i < depth_image.height_; i++) {
+        float *p_depth = (float *)(depth_image.data_.data() +
+                                   depth_image.BytesPerLine() * i);
+        for (int j = 0; j < depth_image.width_; j++) {
+            float *p_output_ch1 = output->PointerAt<float>(j, i, 0);
+            float *p_output_ch2 = output->PointerAt<float>(j, i, 1);
+            float *p_output_ch3 = output->PointerAt<float>(j, i, 2);
+
+            if (p_depth[j] == 1.0) {
+                *p_output_ch1 = invalid_value;
+                *p_output_ch2 = invalid_value;
+                *p_output_ch3 = invalid_value;
+            } else {
+                Eigen::Vector3d point_3d = gl_util::Unproject(
+                        Eigen::Vector3d(j + 0.5, i + 0.5, p_depth[j]), mvp_matrix,
+                        view_control_ptr_->GetWindowWidth(),
+                        view_control_ptr_->GetWindowHeight());
+                *p_output_ch1 = static_cast<float>(point_3d[0]);
+                *p_output_ch2 = static_cast<float>(point_3d[1]);
+                *p_output_ch3 = static_cast<float>(point_3d[2]);
+            }
+        }
+    }
+    return output;
 }
 
 std::shared_ptr<geometry::PointCloud> Visualizer::CapturePointCloud(

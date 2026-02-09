@@ -215,6 +215,12 @@ public:
     void CaptureDepthPointCloud(const std::string &filename = "",
                                 bool do_render = true,
                                 bool convert_to_world_coordinate = false);
+    
+                                /// \brief Function to capture point cloud in a float buffer.
+    std::shared_ptr<geometry::Image> CapturePointCloudFloatBuffer(
+                                bool do_render = true,
+                                bool convert_to_world_coordinate = false,
+                                float invalid_value = std::numeric_limits<float>::quiet_NaN());
 
     std::shared_ptr<geometry::PointCloud> CapturePointCloud(
                                 bool do_render = true,
