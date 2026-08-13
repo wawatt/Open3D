@@ -51,8 +51,9 @@ endif()
 
 open3d_show_and_abort_on_warning(tests)
 open3d_set_global_properties(tests)
-# On Windows, running tests from the build folder needs tbb.dll to be in the same folder.
-if (WIN32)
+# On Windows, running tests from the build folder needs a shared tbb.dll to be
+# in the same folder. A static TBB is already contained in the linked binary.
+if (WIN32 AND NOT STATIC_TBB)
   add_custom_command(
       TARGET tests
       POST_BUILD

@@ -24,15 +24,20 @@ target_link_libraries(Draw PRIVATE Open3D::Open3D)
 if(WIN32)
     get_target_property(open3d_type Open3D::Open3D TYPE)
     if(open3d_type STREQUAL "SHARED_LIBRARY")
-        set(copy_dlls "${CMAKE_INSTALL_PREFIX}/bin/tbb12$<$<CONFIG:Debug>:_debug>.dll" 
-                      "${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll")
-    else() 
-        set(copy_dlls "${CMAKE_INSTALL_PREFIX}/bin/tbb12$<$<CONFIG:Debug>:_debug>.dll") 
+        set(copy_dlls "${CMAKE_INSTALL_PREFIX}/bin/Open3D.dll")
+    else()
+        set(copy_dlls)
+    endif()
+    if(EXISTS "${CMAKE_INSTALL_PREFIX}/bin/tbb12.dll")
+        list(APPEND copy_dlls
+             "${CMAKE_INSTALL_PREFIX}/bin/tbb12$<$<CONFIG:Debug>:_debug>.dll")
     endif()
     # For CUDA builds, we must also copy the CUDA DLLs. Alternately, add
     # $Env:CUDA_PATH/bin to $Env:PATH to avoid this copy.
-    add_custom_command(TARGET Draw POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy ${copy_dlls}
-                        ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>
-                        COMMENT "Copying Open3D DLLs to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    if(copy_dlls)
+        add_custom_command(TARGET Draw POST_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E copy ${copy_dlls}
+                            ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>
+                            COMMENT "Copying Open3D DLLs to ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    endif()
 endif()

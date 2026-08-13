@@ -9,9 +9,13 @@ set(MKL_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/mkl_install)
 set(STATIC_MKL_INCLUDE_DIR "${MKL_INSTALL_PREFIX}/${Open3D_INSTALL_INCLUDE_DIR}/")
 set(STATIC_MKL_LIB_DIR "${MKL_INSTALL_PREFIX}/${Open3D_INSTALL_LIB_DIR}")
 
-# Save and restore BUILD_SHARED_LIBS since TBB must be built as a shared library
+# Save and restore BUILD_SHARED_LIBS since TBB has its own linkage setting.
 set(_build_shared_libs ${BUILD_SHARED_LIBS})
-set(BUILD_SHARED_LIBS ON)
+if(STATIC_TBB)
+    set(BUILD_SHARED_LIBS OFF)
+else()
+    set(BUILD_SHARED_LIBS ON)
+endif()
 set(_win_exp_all_syms ${CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)   # ON interferes with TBB symbols
 FetchContent_Declare(
@@ -29,13 +33,16 @@ FetchContent_MakeAvailable(ext_tbb)
 set(BUILD_SHARED_LIBS ${_build_shared_libs})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ${_win_exp_all_syms})
 
-# TBB is built and linked as a shared library - this is different from all other Open3D dependencies.
-install(TARGETS tbb EXPORT ${PROJECT_NAME}Targets
-  ARCHIVE DESTINATION ${Open3D_INSTALL_LIB_DIR}     # Windows .lib files
-  COMPONENT tbb
-  LIBRARY DESTINATION ${Open3D_INSTALL_LIB_DIR}
-  COMPONENT tbb
-  RUNTIME DESTINATION ${Open3D_INSTALL_BIN_DIR}
-  COMPONENT tbb
-)
+# A shared TBB is part of the Open3D runtime package. A static TBB is a private
+# implementation detail of Open3D and must not be installed or exported.
+if(NOT STATIC_TBB)
+    install(TARGETS tbb EXPORT ${PROJECT_NAME}Targets
+      ARCHIVE DESTINATION ${Open3D_INSTALL_LIB_DIR}     # Windows .lib files
+      COMPONENT tbb
+      LIBRARY DESTINATION ${Open3D_INSTALL_LIB_DIR}
+      COMPONENT tbb
+      RUNTIME DESTINATION ${Open3D_INSTALL_BIN_DIR}
+      COMPONENT tbb
+    )
+endif()
 add_library(${PROJECT_NAME}::3rdparty_tbb ALIAS tbb)

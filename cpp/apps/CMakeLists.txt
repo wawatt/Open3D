@@ -127,7 +127,10 @@ macro(open3d_add_app_common SRC_DIR APP_NAME TARGET_NAME)
                             INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib/")
     endif()
 
-    target_link_libraries(${TARGET_NAME} PRIVATE Open3D::Open3D TBB::tbb ${ARGN})
+    target_link_libraries(${TARGET_NAME} PRIVATE Open3D::Open3D ${ARGN})
+    if(NOT (BUILD_SHARED_LIBS AND STATIC_TBB))
+        target_link_libraries(${TARGET_NAME} PRIVATE TBB::tbb)
+    endif()
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "apps")
 
     if (BUILD_SYCL_MODULE)
